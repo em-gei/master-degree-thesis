@@ -1,0 +1,5 @@
+1) Connect camera module to RaspberryPI
+- Change module adapter from 22 to 15 pin and connect to RaspberryPI
+- sudo apt update
+- sudo apt install -y rpicam-apps
+- TEST => rpicam-hello --autofocus-mode=continuous -t 8000
