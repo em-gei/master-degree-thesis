@@ -1,0 +1,162 @@
+import time
+import cv2
+import numpy as np
+import mediapipe as mp
+from picamera2 import Picamera2
+
+# --- CONFIGURATION PARAMETERS ---
+EAR_THRESHOLD = 0.21        # Lower valus indicates a closed eye
+EAR_FRAMES_PER_ALARM = 10   # Consecutive frames to trigger the alarm (aroun 0.5/1 second)
+
+# Distration thresholds (head angles in degrees)
+YAW_THRESH = 20             # Right/Left
+PITCH_THRESH = 15           # Down/Up
+
+# --- Generic 3D face model ---
+face_3d = np.array([
+    (0.0, 0.0, 0.0),            # Nose
+    (0.0, -330.0, -65.0),       # Chin
+    (-225.0, 170.0, -135.0),    # Left eye
+    (225.0, 170.0, -135.0),     # Right eye
+    (-150.0, -150.0, -125.0),   # Left mouth
+    (150.0, -150.0, -125.0)     # Right mouth
+], dtype=np.float64)
+
+FACE_3D_INDEXES = [1, 199, 33, 263, 61, 291]
+LEFT_EYE = [362, 385, 387, 263, 373, 380]
+RIGHT_EYE = [33, 160, 158, 133, 153, 144]
+
+def calculate_ear(landmarks, indices, w, h):
+    # Calculate Eye Aspect Ratio
+    coords = np.array([(landmarks[i].x * w, landmarks[i].y * h) for i in indices])
+    v1 = np.linalg.norm(coords[1] - coords[5])
+    v2 = np.linalg.norm(coords[2] - coords[4])
+    hor = np.linalg.norm(coords[0] - coords[3])
+    return (v1 + v2) / (2.0 * hor)
+
+def get_head_pose(landmarks, w, h, cam_matrix, dist_matrix):
+    # Calculate head rotation
+    face_2d = []
+    for idx in FACE_3D_INDEXES:
+        x, y = int(landmarks[idx].x * w), int(landmarks[idx].y * h)
+        face_2d.append([x, y])
+    face_2d = np.array(face_2d, dtype=np.float64)
+
+    success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
+    rmat, jac = cv2.Rodrigues(rot_vec)
+    
+    # OpenCV returns degrees 
+    angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
+    return angles[0], angles[1], angles[2]
+
+def main():
+    # Camera Setup
+    try:
+        picam2 = Picamera2()
+        config = picam2.create_preview_configuration(main={"size": (640, 480), "format": "XRGB8888"})
+        picam2.configure(config)
+        picam2.start()
+    except Exception as e:
+        print(f"Camera Error: {e}")
+        return
+
+    # MediaPipe setup
+    mp_face_mesh = mp.solutions.face_mesh
+    face_mesh = mp_face_mesh.FaceMesh(max_num_faces=1, refine_landmarks=True)
+
+    # State variables
+    blink_counter = 0
+    alarm_trigger_time = 0      # To keep alarm active few seconds
+    system_status = "INIZIALIZZAZIONE"
+    status_color = (255, 255, 255)
+
+    # Camera matrix
+    w, h = 640, 480
+    focal_length = 1 * w
+    cam_matrix = np.array([[focal_length, 0, w/2], [0, focal_length, h/2], [0, 0, 1]])
+    dist_matrix = np.zeros((4, 1), dtype=np.float64)
+
+    while True:
+        image = picam2.capture_array()
+        if image is None: continue
+        if image.shape[2] == 4: image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+        
+        image.flags.writeable = False
+        results = face_mesh.process(image)
+        image.flags.writeable = True
+
+        anonymous_view = np.zeros((h, w, 3), dtype=np.uint8)
+
+        # Default: Safe Driving
+        current_status = "GUIDA SICURA"
+        current_color = (0, 255, 0)
+        
+        yaw, pitch = 0, 0
+        avg_ear = 0
+
+        if results.multi_face_landmarks:
+            for face_landmarks in results.multi_face_landmarks:
+                lm = face_landmarks.landmark
+
+                # 1. Calculate fundamental values
+                left_ear = calculate_ear(lm, LEFT_EYE, w, h)
+                right_ear = calculate_ear(lm, RIGHT_EYE, w, h)
+                avg_ear = (left_ear + right_ear) / 2.0
+                pitch, yaw, roll = get_head_pose(lm, w, h, cam_matrix, dist_matrix)
+
+                # 2. Drowsy Logic (Top Priority)
+                if avg_ear < EAR_THRESHOLD:
+                    blink_counter += 1
+                else:
+                    # Decremental reset (so as not to lose the count for a single incorrect frame)
+                    if blink_counter > 0: blink_counter -= 1
+
+                # 3. Decision Logic
+                if blink_counter >= EAR_FRAMES_PER_ALARM:
+                    current_status = "ALLARME: SONNOLENZA!"
+                    current_color = (0, 0, 255) # RED
+                    alarm_trigger_time = time.time() # Report alarm time
+                
+                elif abs(yaw) > YAW_THRESH:
+                    current_status = f"DISTRATTO: {'SX' if yaw < 0 else 'DX'}"
+                    current_color = (0, 255, 255) # YELLOW
+                
+                elif pitch < -PITCH_THRESH:
+                    current_status = "DISTRATTO: BASSO (Cellulare?)"
+                    current_color = (0, 255, 255)
+
+                # Drawing essential points
+                for idx in LEFT_EYE + RIGHT_EYE + FACE_3D_INDEXES:
+                    pt = (int(lm[idx].x * w), int(lm[idx].y * h))
+                    cv2.circle(anonymous_view, pt, 2, current_color, -1)
+
+        else:
+            current_status = "NESSUN VOLTO RILEVATO"
+            current_color = (255, 0, 255)
+            blink_counter = 0
+
+        # --- ALARM PERSISTENCE MANAGEMENT ---
+        # Show message if it was any alarm in the past 2 seconds 
+        if time.time() - alarm_trigger_time < 2.0:
+            system_status = "ALLARME: SONNOLENZA!"
+            status_color = (0, 0, 255)
+        else:
+            system_status = current_status
+            status_color = current_color
+
+        # Show text
+        cv2.putText(anonymous_view, system_status, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, status_color, 2)
+        
+        # Debug Data
+        debug_info = f"EAR: {avg_ear:.2f} (Count: {blink_counter}) | Y: {int(yaw)} | P: {int(pitch)}"
+        cv2.putText(anonymous_view, debug_info, (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
+
+        cv2.imshow('DMS - Anonymous Core', anonymous_view)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'): break
+
+    picam2.stop()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
