@@ -1,5 +1,18 @@
+CAMERA SETUP AND IMPLEMENTATION
 1) Connect camera module to RaspberryPI
 - Change module adapter from 22 to 15 pin and connect to RaspberryPI
 - sudo apt update
 - sudo apt install -y rpicam-apps
 - TEST => rpicam-hello --autofocus-mode=continuous -t 8000
+
+2) Initialize local environment
+- Create a folder and a virtual environment in it
+  python3 -m venv venv --system-site-packages
+- Activate virtual env
+  source venv/bin/activate
+- Install dependencies in virtual environment
+  pip install opencv-python mediapipe numpy
+
+3) Camera face detection (Driver Monitoring System)
+- Logic implemented in dms_core
+- Tests implemented in dms_core_tests
