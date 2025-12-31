@@ -1,4 +1,4 @@
-CAMERA SETUP AND IMPLEMENTATION
+### CAMERA SETUP AND IMPLEMENTATION ###
 1) Connect camera module to RaspberryPI
 - Change module adapter from 22 to 15 pin and connect to RaspberryPI
 - sudo apt update
@@ -13,6 +13,26 @@ CAMERA SETUP AND IMPLEMENTATION
 - Install dependencies in virtual environment
   pip install opencv-python mediapipe numpy
 
-3) Camera face detection (Driver Monitoring System)
+
+
+### MATRIX LED SETUP AND IMPLEMENTATION ###
+1) Connect matrix module to RaspberryPI
+- VCC to PIN 2
+- GND to PIN 20
+- DIN to PIN 19
+- CS to PIN 24
+- CLK to PIN 23
+- TEST => python dms_led.py
+
+2) Configure virtual env
+- sudo apt update
+- sudo apt install -y python3-dev python3-pip libfreetype6-dev libjpeg-dev build-essential libopenjp2-7 libtiff5
+- pip install gpiozero rpi-lgpio
+- pip install opencv-python mediapipe
+- pip install "numpy<2"    (Picamera2 needs NumPy 1.x)
+
+
+### CORE ALGORITHM ###
+1) Driver Monitoring System
 - Logic implemented in dms_core
 - Tests implemented in dms_core_tests
