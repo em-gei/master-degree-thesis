@@ -36,7 +36,6 @@ class TestDMSLogicAndMath(unittest.TestCase):
         pass
 
     # --- DECISION LOGIC TESTS ---
-    
     def test_case_safe_driving(self):
         """Test: Normal driving (Head straight, Eyes open)"""
         print("   Context: Pitch=0, Yaw=0, EAR=0.30 (Open), Counter=0")
@@ -97,10 +96,10 @@ class TestDMSLogicAndMath(unittest.TestCase):
         self.assertIn("DISTRATTO", result["text"])
         # Counter should decrease slowly, not full reset
         self.assertEqual(result["blink_counter"], 4)
-        print("   ✅ PASSED: System correctly identified Side Distraction.")
+        print("   ✅ PASSED: System correctly identified Side Distraction.")       
+
 
     # --- MATHEMATICAL TESTS ---
-
     def test_ear_calculation(self):
         """Test: Verify EAR calculation formula"""
         print("   Context: Simulating open eye coordinates...")

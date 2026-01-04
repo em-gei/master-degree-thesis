@@ -32,6 +32,23 @@
 - pip install "numpy<2"    (Picamera2 needs NumPy 1.x)
 
 
+
+### MICROPHONE CONFIGURATION ###
+1) Install system libraries
+- sudo apt update
+- sudo apt install -y libportaudio2 libportaudiocpp0 portaudio19-dev libatlas-base-dev
+
+2) Activate virtual environment
+- source venv/bin/activate
+
+3) Install python library
+pip install pyaudio numpy
+
+4) Run find_mic script to determine microphone ID
+- python find_mic.py
+
+
+
 ### CORE ALGORITHM ###
 1) Driver Monitoring System
 - Logic implemented in dms_core

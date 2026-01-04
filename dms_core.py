@@ -2,6 +2,7 @@ import time
 import cv2
 import numpy as np
 import mediapipe as mp
+from dms_audio import DMSAudio
 
 # Import management to allow testing even without hardware
 try:
@@ -13,7 +14,6 @@ except ImportError:
 # --- CONFIGURATION PARAMETERS ---
 EAR_THRESHOLD = 0.20        
 EAR_FRAMES_PER_ALARM = 10   
-
 # Distraction thresholds (degrees)
 YAW_THRESH = 20             
 PITCH_DOWN_THRESH = -20     
@@ -113,6 +113,11 @@ def main():
     print("Inizializzazione LED...")
     led_system = DMSLed()
     
+    # --- SETUP AUDIO ---
+    audio_system = DMSAudio(device_index=0, threshold_db=90) 
+    audio_system.start_listening()
+    # -------------------
+    
     try:
         picam2 = Picamera2()
         config = picam2.create_preview_configuration(main={"size": (640, 480), "format": "XRGB8888"})
@@ -149,6 +154,16 @@ def main():
         current_color = (0, 255, 0)
         
         pitch, yaw, avg_ear = 0, 0, 0
+        
+        if audio_system.crash_detected:
+            print("🚨 CRITICAL ERROR: INCIDENTE RILEVATO (AUDIO)")
+            led_system.signal_danger()
+            cv2.putText(anonymous_view, "CRASH DETECTED!", (50, 240), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
+            cv2.imshow('DMS - Anonymous Core', anonymous_view)
+            cv2.waitKey(1)
+            time.sleep(5)
+            audio_system.crash_detected = True
+            exit()
 
         if results.multi_face_landmarks:
             for face_landmarks in results.multi_face_landmarks:
@@ -197,6 +212,7 @@ def main():
         cv2.imshow('DMS', anonymous_view)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
+    audio_system.stop()
     picam2.stop()
     cv2.destroyAllWindows()
     led_system.close()
