@@ -3,19 +3,19 @@ import numpy as np
 import threading
 import time
 
+# Audio Configurations
+CHUNK = 1024       # Samples per block (buffer)
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 44100       # Hz (Sampling Rate)
+
 class DMSAudio:
-    def __init__(self, device_index=None, threshold_db=90):
+    def __init__(self, device_index=None, threshold_db=85):
         self.p = pyaudio.PyAudio()
         self.stream = None
         self.running = False
         self.crash_detected = False
-        
-        # Audio Configurations
-        self.CHUNK = 1024       # Samples per block (buffer)
-        self.FORMAT = pyaudio.paInt16
-        self.CHANNELS = 1
-        self.RATE = 44100       # Hz (Sampling Rate)
-        self.THRESHOLD_DB = threshold_db 
+        self.THRESHOLD_DB = threshold_db
         
         # Microphone ID (If None, uses default, but better to specify)
         self.device_index = device_index
@@ -25,12 +25,12 @@ class DMSAudio:
         if self.running: return
         
         try:
-            self.stream = self.p.open(format=self.FORMAT,
-                                      channels=self.CHANNELS,
-                                      rate=self.RATE,
+            self.stream = self.p.open(format=FORMAT,
+                                      channels=CHANNELS,
+                                      rate=RATE,
                                       input=True,
                                       input_device_index=self.device_index,
-                                      frames_per_buffer=self.CHUNK)
+                                      frames_per_buffer=CHUNK)
             
             self.running = True
             # Start the process in a separate thread
@@ -48,7 +48,7 @@ class DMSAudio:
         while self.running:
             try:
                 # Read raw data from microphone (without overflow exceptions)
-                data = self.stream.read(self.CHUNK, exception_on_overflow=False)
+                data = self.stream.read(CHUNK, exception_on_overflow=False)
                 # Convert to numbers (NumPy array)
                 audio_data = np.frombuffer(data, dtype=np.int16)
                 # Calculate intensity (RMS - Root Mean Square)
