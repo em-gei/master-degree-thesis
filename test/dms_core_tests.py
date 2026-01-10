@@ -1,129 +1,132 @@
 import unittest
-import numpy as np
+from unittest.mock import MagicMock, patch
+import sys
 import dms_core
 
-# --- MOCK CLASS TO SIMULATE MEDIAPIPE ---
-class MockLandmark:
-    """
-    This class simulates a single MediaPipe point (Landmark).
-    MediaPipe returns objects with .x and .y properties, so we
-    create fake objects with the same properties to fool the functions.
-    """
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-class TestDMSLogicAndMath(unittest.TestCase):
+class TestDMSCoreIntegration(unittest.TestCase):
     
     def setUp(self):
-        """
-        Set up the test environment before EACH test.
-        Initializes fake landmarks and camera matrix.
-        """
-        # Print a header to see which test is running in the logs
         print(f"\n🔵 {self._testMethodName}")
 
-        self.width = 640
-        self.height = 480
+    @patch('dms_core.cv2')
+    @patch('dms_core.DMSAudio')
+    @patch('dms_core.DMSCamera')
+    @patch('dms_core.DMSLed')
+    def test_audio_crash_detected(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+        """
+        Scenario: Audio rileva crash.
+        Atteso: Il sistema segnala pericolo (LED) e poi esce (exit).
+        """
+        mock_audio_instance = mock_audio_cls.return_value
+        mock_audio_instance.crash_detected = True
+        mock_led_instance = mock_led_cls.return_value
         
-        # Create a list of 478 "empty" landmarks (all 0,0)
-        self.fake_landmarks = [MockLandmark(0.0, 0.0) for _ in range(478)]
+        # 2. ESCAPE ROUTE: Mock exit() to not kill test runner when it executes
+        with patch('builtins.exit', side_effect=SystemExit) as mock_exit:
+            try:
+                dms_core.main()
+            except SystemExit:
+                pass
 
-    def tearDown(self):
-        """Executed after each test"""
-        # If we reach this point without errors, the test passed
-        # (If assertion fails, unittest stops before this)
-        pass
+            print("   Verifica: Audio Crash -> LED Danger + Exit")
+            mock_led_instance.signal_danger.assert_called_once()
+            mock_exit.assert_called_once()
+            print("   ✅ PASSED")
+            
 
-    # --- DECISION LOGIC TESTS ---
-    
-    def test_case_safe_driving(self):
-        """Test: Normal driving (Head straight, Eyes open)"""
-        print("   Context: Pitch=0, Yaw=0, EAR=0.30 (Open), Counter=0")
-        
-        result = dms_core.analyze_driver_state(pitch=0, yaw=0, avg_ear=0.30, blink_counter=0)
-        
-        self.assertEqual(result["led_command"], "SAFE")
-        self.assertEqual(result["blink_counter"], 0)
-        self.assertFalse(result["alarm_triggered"])
-        print("   ✅ PASSED: System correctly identified Safe Driving.")
+    @patch('dms_core.cv2')
+    @patch('dms_core.DMSAudio')
+    @patch('dms_core.DMSCamera')
+    @patch('dms_core.DMSLed')
+    def test_camera_safe(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+        """
+        Scenario: Audio OK, Camera dice SAFE.
+        Atteso: LED Safe.
+        """
+        mock_audio_instance = mock_audio_cls.return_value
+        mock_audio_instance.crash_detected = False
+        mock_cam_instance = mock_cam_cls.return_value
+        mock_cam_instance.get_status.return_value = {"led_command": "SAFE"}
+        mock_led_instance = mock_led_cls.return_value
+        # mock return value ('q' == 113) to activate break and exit from while loop after 1 iteration
+        mock_cv2.waitKey.return_value = ord('q') 
 
-    def test_case_cellphone_distraction(self):
-        """Test: Cellphone Distraction (Head down, Eyes open)"""
-        print("   Context: Pitch=-25 (Down), EAR=0.30 (Open)")
-        
-        # We simulate looking down (-25 degrees) with eyes open
-        result = dms_core.analyze_driver_state(pitch=-25, yaw=0, avg_ear=0.30, blink_counter=5) 
-        
-        # Expectation: DOWN command and blink counter reset
-        self.assertEqual(result["led_command"], "DOWN")
-        self.assertIn("CELLULARE", result["text"])
-        self.assertEqual(result["blink_counter"], 0, "Blink counter should reset if looking at phone")
-        print("   ✅ PASSED: System correctly identified Cellphone distraction.")
+        dms_core.main()
 
-    def test_case_microsleep_head_drop(self):
-        """Test: Microsleep / Head Drop (Head down, Eyes closed)"""
-        print("   Context: Pitch=-25 (Down), EAR=0.15 (Closed)")
+        print("   Verifica: Camera SAFE -> LED Safe")
+        mock_led_instance.signal_safe.assert_called()
+        print("   ✅ PASSED")
         
-        current_counter = 2
-        result = dms_core.analyze_driver_state(pitch=-25, yaw=0, avg_ear=0.15, blink_counter=current_counter)
-        
-        # Expectation: DANGER command and rapid counter increase
-        self.assertEqual(result["led_command"], "DANGER")
-        self.assertIn("COLPO DI SONNO", result["text"])
-        self.assertTrue(result["alarm_triggered"])
-        self.assertGreater(result["blink_counter"], current_counter + 2, "Counter should increase rapidly")
-        print("   ✅ PASSED: System correctly identified Head Drop Microsleep.")
 
-    def test_case_standard_drowsiness(self):
-        """Test: Standard Drowsiness (Head straight, Eyes closed for long time)"""
-        threshold = dms_core.EAR_FRAMES_PER_ALARM
-        print(f"   Context: Pitch=0, EAR=0.15, Counter={threshold} (Threshold reached)")
-        
-        result = dms_core.analyze_driver_state(pitch=0, yaw=0, avg_ear=0.15, blink_counter=threshold)
-        
-        self.assertEqual(result["led_command"], "DANGER")
-        self.assertIn("SONNOLENZA", result["text"])
-        self.assertTrue(result["alarm_triggered"])
-        print("   ✅ PASSED: System correctly identified Standard Drowsiness.")
+    @patch('dms_core.cv2')
+    @patch('dms_core.DMSAudio')
+    @patch('dms_core.DMSCamera')
+    @patch('dms_core.DMSLed')
+    def test_camera_distraction_down(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+        """
+        Scenario: Audio OK, Camera dice DOWN.
+        Atteso: LED Distraction Down.
+        """
+        mock_audio_instance = mock_audio_cls.return_value
+        mock_audio_instance.crash_detected = False
+        mock_cam_instance = mock_cam_cls.return_value
+        mock_cam_instance.get_status.return_value = {"led_command": "DOWN"}
+        mock_led_instance = mock_led_cls.return_value
+        # mock return value ('q' == 113) to activate break and exit from while loop after 1 iteration
+        mock_cv2.waitKey.return_value = ord('q') 
 
-    def test_case_side_distraction(self):
-        """Test: Side Distraction (High Yaw)"""
-        print("   Context: Yaw=-30 (Looking Left)")
-        
-        result = dms_core.analyze_driver_state(pitch=0, yaw=-30, avg_ear=0.30, blink_counter=5)
-        
-        self.assertEqual(result["led_command"], "SX")
-        self.assertIn("DISTRATTO", result["text"])
-        # Counter should decrease slowly, not full reset
-        self.assertEqual(result["blink_counter"], 4)
-        print("   ✅ PASSED: System correctly identified Side Distraction.")
+        dms_core.main()
 
-    # --- MATHEMATICAL TESTS ---
+        print("   Verifica: Camera DOWN -> LED Distraction Down")
+        mock_led_instance.signal_distraction_down.assert_called()
+        print("   ✅ PASSED")
+        
 
-    def test_ear_calculation(self):
-        """Test: Verify EAR calculation formula"""
-        print("   Context: Simulating open eye coordinates...")
-        
-        # Simulate an OPEN eye using specific landmark indices
-        self.fake_landmarks[362] = MockLandmark(0.1, 0.5) 
-        self.fake_landmarks[263] = MockLandmark(0.3, 0.5)
-        self.fake_landmarks[385] = MockLandmark(0.2, 0.4) 
-        self.fake_landmarks[387] = MockLandmark(0.2, 0.4)
-        self.fake_landmarks[373] = MockLandmark(0.2, 0.6) 
-        self.fake_landmarks[380] = MockLandmark(0.2, 0.6)
-        
-        ear = dms_core.calculate_ear(self.fake_landmarks, dms_core.LEFT_EYE, 100, 100)
-        self.assertGreater(ear, 0.25)
-        print(f"   ✅ PASSED: Calculated EAR is {ear:.2f} (Expected > 0.25)")
+    @patch('dms_core.cv2')
+    @patch('dms_core.DMSAudio')
+    @patch('dms_core.DMSCamera')
+    @patch('dms_core.DMSLed')
+    def test_camera_no_face_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+        """
+        Scenario: Audio OK, Camera restituisce None (nessun volto).
+        Atteso: LED Alert (Anomalia/Standby).
+        """
+        mock_audio_instance = mock_audio_cls.return_value
+        mock_audio_instance.crash_detected = False
+        mock_cam_instance = mock_cam_cls.return_value
+        mock_cam_instance.get_status.return_value = None # NESSUN VOLTO
+        mock_led_instance = mock_led_cls.return_value
+        mock_cv2.waitKey.return_value = ord('q')
 
-    def test_config_validity(self):
-        """Test: Verify configuration constants are valid"""
-        print("   Context: Checking global constants...")
+        dms_core.main()
+
+        print("   Verifica: Camera None -> LED Alert")
+        mock_led_instance.signal_alert.assert_called()
+        print("   ✅ PASSED")
         
-        self.assertLess(dms_core.PITCH_DOWN_THRESH, 0, "Pitch Down Threshold must be negative")
-        self.assertGreater(dms_core.EAR_THRESHOLD, 0.10, "EAR Threshold too low")
-        print("   ✅ PASSED: Configuration parameters are valid.")
+
+    @patch('dms_core.cv2')
+    @patch('dms_core.DMSAudio')
+    @patch('dms_core.DMSCamera')
+    @patch('dms_core.DMSLed')
+    def test_camera_explicit_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+        """
+        Scenario: Camera restituisce esplicitamente comando ALERT.
+        Atteso: LED Alert.
+        """
+        mock_audio_instance = mock_audio_cls.return_value
+        mock_audio_instance.crash_detected = False
+        mock_cam_instance = mock_cam_cls.return_value
+        mock_cam_instance.get_status.return_value = {"led_command": "ALERT"}
+        mock_led_instance = mock_led_cls.return_value
+        mock_cv2.waitKey.return_value = ord('q')
+
+        dms_core.main()
+
+        print("   Verifica: Camera Command ALERT -> LED Alert")
+        mock_led_instance.signal_alert.assert_called()
+        print("   ✅ PASSED")
+        
 
 if __name__ == '__main__':
     unittest.main()

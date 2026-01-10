@@ -4,6 +4,7 @@ import time
 class DMSLed:
     def __init__(self):
         try:
+            print("Inizializzazione LED...")
             # PIN CONFIGURATION
             self.data_pin = OutputDevice(10) # Physical Pin 19 -> GPIO 10 (Data)
             self.clock_pin = OutputDevice(11) # Physical Pin 23 -> GPIO 11 (Clock)
@@ -18,6 +19,7 @@ class DMSLed:
         except Exception as e:
             print(f"❌ Errore Hardware LED: {e}")
             self.active = False
+            
 
     def _shift_out(self, val):
         # Send byte, bit per bit
@@ -33,6 +35,7 @@ class DMSLed:
             # No need for sleep here, Python is already slow enough for the chip
             self.clock_pin.off()
 
+
     def _send(self, register, data):
         # Send command to the chip
         if not self.active: return
@@ -40,6 +43,7 @@ class DMSLed:
         self._shift_out(register)
         self._shift_out(data)
         self.load_pin.on()
+        
 
     def _init_matrix(self):
         # Boot sequence MAX7219
@@ -48,16 +52,19 @@ class DMSLed:
         self._send(0x0B, 0x07) # Scan limit -> All
         self._send(0x0A, 0x02) # Intensity (0x00 a 0x0F) - Mettiamo 2 (bassa)
         self._send(0x09, 0x00) # Decode mode -> None
+        
 
     def draw_bitmap(self, bitmap):
         # Draw an 8-byte list
         for i, row_data in enumerate(bitmap):
             self._send(i + 1, row_data)
 
+
     def clear(self):
         # Clean the matrix
         for i in range(1, 9):
             self._send(i, 0x00)
+
 
     def close(self):
         self.clear()
@@ -97,6 +104,13 @@ class DMSLed:
         # Draw an X
         bitmap = [0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81]
         self.draw_bitmap(bitmap)
+        
+    def signal_alert(self):
+        # Draw an horizontal line in the middle
+        val = 0x18 
+        bitmap = [val, val, val, val, val, val, val, val]
+        self.draw_bitmap(bitmap)
+        
 
 # Test
 if __name__ == "__main__":
@@ -109,5 +123,8 @@ if __name__ == "__main__":
     time.sleep(2)
     print("Test Freccia DX")
     led.signal_distraction_dx()
+    time.sleep(2)
+    print("ALERT")
+    led.signal_alert()
     time.sleep(2)
     led.close()
