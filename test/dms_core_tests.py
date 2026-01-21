@@ -9,10 +9,11 @@ class TestDMSCoreIntegration(unittest.TestCase):
         print(f"\n🔵 {self._testMethodName}")
 
     @patch('dms_core.cv2')
+    @patch('dms_core.DMSTemp')
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_audio_crash_detected(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+    def test_audio_crash_detected(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_cv2):
         """
         Scenario: Audio rileva crash.
         Atteso: Il sistema segnala pericolo (LED) e poi esce (exit).
@@ -35,10 +36,11 @@ class TestDMSCoreIntegration(unittest.TestCase):
             
 
     @patch('dms_core.cv2')
+    @patch('dms_core.DMSTemp')
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_safe(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+    def test_camera_safe(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_cv2):
         """
         Scenario: Audio OK, Camera dice SAFE.
         Atteso: LED Safe.
@@ -59,10 +61,11 @@ class TestDMSCoreIntegration(unittest.TestCase):
         
 
     @patch('dms_core.cv2')
+    @patch('dms_core.DMSTemp')
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_distraction_down(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+    def test_camera_distraction_down(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_cv2):
         """
         Scenario: Audio OK, Camera dice DOWN.
         Atteso: LED Distraction Down.
@@ -72,7 +75,6 @@ class TestDMSCoreIntegration(unittest.TestCase):
         mock_cam_instance = mock_cam_cls.return_value
         mock_cam_instance.get_status.return_value = {"led_command": "DOWN"}
         mock_led_instance = mock_led_cls.return_value
-        # mock return value ('q' == 113) to activate break and exit from while loop after 1 iteration
         mock_cv2.waitKey.return_value = ord('q') 
 
         dms_core.main()
@@ -83,10 +85,11 @@ class TestDMSCoreIntegration(unittest.TestCase):
         
 
     @patch('dms_core.cv2')
+    @patch('dms_core.DMSTemp')
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_no_face_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+    def test_camera_no_face_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_cv2):
         """
         Scenario: Audio OK, Camera restituisce None (nessun volto).
         Atteso: LED Alert (Anomalia/Standby).
@@ -106,10 +109,11 @@ class TestDMSCoreIntegration(unittest.TestCase):
         
 
     @patch('dms_core.cv2')
+    @patch('dms_core.DMSTemp')
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_explicit_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_cv2):
+    def test_camera_explicit_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_cv2):
         """
         Scenario: Camera restituisce esplicitamente comando ALERT.
         Atteso: LED Alert.
@@ -126,6 +130,32 @@ class TestDMSCoreIntegration(unittest.TestCase):
         print("   Verifica: Camera Command ALERT -> LED Alert")
         mock_led_instance.signal_alert.assert_called()
         print("   ✅ PASSED")
+        
+    
+    @patch('dms_core.cv2')
+    @patch('dms_core.DMSTemp')
+    @patch('dms_core.DMSAudio')
+    @patch('dms_core.DMSCamera')
+    @patch('dms_core.DMSLed')
+    def test_temperature_polling(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_cv2):
+        """
+        Scenario: Verifica che il sistema di temperatura venga interrogato nel loop.
+        """
+        mock_audio_instance = mock_audio_cls.return_value
+        mock_audio_instance.crash_detected = False
+        mock_cam_instance = mock_cam_cls.return_value
+        mock_cam_instance.get_status.return_value = {"led_command": "SAFE"}
+        mock_temp_instance = mock_temp_cls.return_value
+        
+        # Simulate the passage of time
+        with patch('dms_core.time.time', side_effect=[10, 11]):
+            # Set waitKey to exit immediately
+            mock_cv2.waitKey.return_value = ord('q')
+            dms_core.main()
+
+            print("   Verifica: DMSTemp.get_status() chiamato")
+            mock_temp_instance.get_status.assert_called()
+            print("   ✅ PASSED")
         
 
 if __name__ == '__main__':
