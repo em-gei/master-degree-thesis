@@ -8,6 +8,7 @@ try:
     from dms_led import DMSLed
     from dms_audio import DMSAudio
     from dms_camera import DMSCamera
+    from dms_temp import DMSTemp
 except ImportError:
     print("⚠️ Hardware modules not found")
 
@@ -17,12 +18,18 @@ def main():
     camera_system = DMSCamera()
     audio_system = DMSAudio(device_index=0, threshold_db=85) 
     audio_system.start_listening()
+    temperature_system = DMSTemp()
+    last_temp_check = 0
     
     while True:        
         if audio_system.crash_detected:
             print("🚨 CRITICAL ERROR: INCIDENTE RILEVATO (AUDIO)")
             led_system.signal_danger()
             exit()
+        
+        if time.time() - last_temp_check > 5.0:
+            temp_decision = temperature_system.get_status()
+            last_temp_check = time.time()
         
         decision = camera_system.get_status()
         if decision is not None and led_system is not None:
@@ -44,6 +51,7 @@ def main():
     print("Chiusura in corso...")
     audio_system.stop()
     camera_system.stop()
+    temperature_system.stop()
     cv2.destroyAllWindows()
     led_system.close()
 

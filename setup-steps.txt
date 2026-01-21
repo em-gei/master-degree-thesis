@@ -48,6 +48,18 @@ pip install pyaudio numpy
 - python find_mic.py
 
 
+### TEMPERATURE SENSOR CONFIGURATION ###
+1) Activate virtual environment
+- source venv/bin/activate
+
+2) Install system libraries
+- sudo apt-get install libgpiod2
+- pip3 install adafruit-circuitpython-dht
+- pip3 install adafruit-blinka
+- sudo apt-get update
+- sudo apt-get install python3-libgpiod libgpiod-dev
+
+
 
 ### CORE ALGORITHM ###
 1) Driver Monitoring System
