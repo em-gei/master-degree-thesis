@@ -31,6 +31,13 @@
 - pip install opencv-python mediapipe
 - pip install "numpy<2"    (Picamera2 needs NumPy 1.x)
 
+3) Pin configuration
+- Pin2 (5V) => VCC
+- Pin20 (Ground) => GND
+- Pin19 (GPIO10) => DIN
+- Pin24 (GPIO8) => CS
+- Pin23 (GPIO11) => CLK
+
 
 
 ### MICROPHONE CONFIGURATION ###
@@ -58,6 +65,21 @@ pip install pyaudio numpy
 - pip3 install adafruit-blinka
 - sudo apt-get update
 - sudo apt-get install python3-libgpiod libgpiod-dev
+
+3) Pin configuration
+- Pin1 (3.3V) => +
+- Pin7 (GPIO4) => Out
+- Pin6 (Ground) => -
+
+
+### ALCOOL SENSOR CONFIGURATION ###
+1) Pin configuration
+- Pin2 (5V) => VCC
+- Pin6 (Ground) => GND
+- DO => Breadboard 18-J
+- Resistenza 1.2kΩ (1K2) => Breadboard 18-H => Breadboard 30-H
+- Resistenza 2.2kΩ (2K2) => Breadboard 30-I => Ground
+- Pin16 (GPIO23) => breadboard 30-J
 
 
 
