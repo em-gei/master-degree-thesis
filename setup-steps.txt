@@ -82,6 +82,25 @@ pip install pyaudio numpy
 - Pin16 (GPIO23) => breadboard 30-J
 
 
+### LIGHT SENSOR CONFIGURATION ###
+1) Pin configuration
+- Pin17 (3.3V) => VCC
+- Pin39 (Ground) => GND
+- Pin3 (GPIO2) => SDA
+- Pin5 (GPIO3) => SCL
+
+2) Install system libraries
+- sudo raspi-config
+  - 3 Interface Options
+    - I5 I2C
+      - YES
+- sudo reboot
+Check connection (last command should show a grid with 29 in the middle) => 
+  - sudo apt-get install -y i2c-tools
+  - i2cdetect -y 1
+- pip install adafruit-circuitpython-tsl2591
+
+
 
 ### CORE ALGORITHM ###
 1) Driver Monitoring System
