@@ -1,7 +1,5 @@
 import time
 import cv2
-import numpy as np
-import mediapipe as mp
 
 # Hardware / Module Imports
 try:
@@ -10,6 +8,7 @@ try:
     from dms_camera import DMSCamera
     from dms_temp import DMSTemp
     from dms_alcohol import DMSAlcohol
+    from dms_light import DMSLight
 except ImportError:
     print("⚠️ Hardware modules not found")
 
@@ -22,9 +21,16 @@ def main():
     audio_system.start_listening()
     temperature_system = DMSTemp()
     alcohol_system = DMSAlcohol()
+    light_system = DMSLight()
     last_temp_check = 0
+    last_light_check = 0
     
-    while True:        
+    while True:      
+        if time.time() - last_light_check > 5.0:
+            light_decision = light_system.get_status()
+            last_light_check = time.time()
+            print(light_decision['ui_text'], light_decision['lux_value'])
+        
         if audio_system.crash_detected:
             print("🚨 CRITICAL ERROR: INCIDENTE RILEVATO (AUDIO)")
             led_system.signal_danger()
@@ -65,6 +71,7 @@ def main():
     camera_system.stop()
     temperature_system.stop()
     alcohol_system.stop()
+    light_system.stop()
     cv2.destroyAllWindows()
     led_system.close()
 
