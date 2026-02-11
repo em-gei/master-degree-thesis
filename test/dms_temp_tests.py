@@ -63,13 +63,13 @@ class TestDMSTemp(unittest.TestCase):
         
 
     def test_status_red_hot(self):
-        """Test: > 28 gradi -> Sfondo Rosso e WARN"""
+        """Test: > 28 gradi -> Sfondo Rosso e ALERT"""
         self.mock_sensor_instance.temperature = 35.0
         self.mock_sensor_instance.humidity = 50
         
         status = self.temp_system.get_status()
         
-        self.assertEqual(status['led_command'], 'WARN')
+        self.assertEqual(status['led_command'], 'ALERT')
         args, _ = mock_cv2.imshow.call_args
         _, img_array = args
         np.testing.assert_array_equal(img_array[0, 0], [0, 0, 255], err_msg="Lo sfondo dovrebbe essere ROSSO")

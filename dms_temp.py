@@ -67,7 +67,7 @@ class DMSTemp:
 
             self._update_ui(temperature, humidity)
             if temperature > TEMP_HIGH:
-                return {"priority": 1, "led_command": "WARN"}
+                return {"priority": 1, "led_command": "ALERT"}
             else:
                 return {"priority": 0, "led_command": "SAFE"}
         except RuntimeError:
