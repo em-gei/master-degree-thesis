@@ -9,6 +9,7 @@ try:
     from dms_temp import DMSTemp
     from dms_alcohol import DMSAlcohol
     from dms_light import DMSLight
+    from dms_air import DMSAir
 except ImportError:
     print("⚠️ Hardware modules not found")
 
@@ -22,6 +23,7 @@ def main():
     temperature_system = DMSTemp()
     alcohol_system = DMSAlcohol()
     light_system = DMSLight()
+    air_system = DMSAir()
     last_temp_check = 0
     last_light_check = 0
     
@@ -37,6 +39,7 @@ def main():
             exit()
             
         alc_decision = alcohol_system.get_status()
+        air_decision = air_system.get_status()
         
         if time.time() - last_temp_check > 5.0: # every 5 seconds
             temp_decision = temperature_system.get_status()
@@ -47,10 +50,15 @@ def main():
         final_led_cmd = "SAFE"
         if alc_decision and alc_decision["led_command"] == "DANGER":
             final_led_cmd = "DANGER"        
-        elif cam_decision is not None:
+        elif cam_decision is not None and cam_decision.get("led_command") in ["DANGER", "DOWN", "SX", "DX"]:
             final_led_cmd = cam_decision.get("led_command", "SAFE")
-        elif temp_decision and temp_decision["led_command"] == "WARN":
-            final_led_cmd = "WARN"
+        elif air_decision and air_decision["led_command"] == "ALERT":
+            final_led_cmd = "ALERT" # Accende Led Giallo
+        elif temp_decision and temp_decision["led_command"] == "ALERT":
+            final_led_cmd = "ALERT"
+        # Low priority
+        elif cam_decision is not None and cam_decision.get("led_command") == "ALERT":
+            final_led_cmd = "ALERT"
 
         if led_system:
             if final_led_cmd == "DOWN": led_system.signal_distraction_down()
@@ -58,7 +66,6 @@ def main():
             elif final_led_cmd == "SX": led_system.signal_distraction_sx()
             elif final_led_cmd == "DX": led_system.signal_distraction_dx()
             elif final_led_cmd == "ALERT": led_system.signal_alert()
-            elif final_led_cmd == "WARN": led_system.signal_warning()
             elif final_led_cmd == "SAFE": led_system.signal_safe()
 
         # waitKey it's used to process graphic events from cv2.imshow
@@ -71,6 +78,7 @@ def main():
     camera_system.stop()
     temperature_system.stop()
     alcohol_system.stop()
+    air_system.stop()
     light_system.stop()
     cv2.destroyAllWindows()
     led_system.close()
