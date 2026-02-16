@@ -108,6 +108,19 @@ Check connection (last command should show a grid with 29 in the middle) =>
 - Resistenza 2.2kΩ (2K2) => Breadboard 48-G => Ground
 
 
+### GYROSCOPE SENSOR CONFIGURATION ###
+1) Pin configuration
+- Pin1 (3.3V) => VCC
+- Pin9 (Ground) => GND
+- Pin3 (GPIO2) => SDA
+- Pin5 (GPIO3) => SCL
+2) Check connection (last command should show a grid with 68 in the middle) => 
+  - sudo apt-get install -y i2c-tools
+  - i2cdetect -y 1 
+3) Install system libraries
+- pip install adafruit-circuitpython-mpu6050	
+
+
 
 ### CORE ALGORITHM ###
 1) Driver Monitoring System

@@ -20,6 +20,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
         return mock_instance
 
 
+    @patch('dms_core.DMSGyro')
     @patch('dms_core.DMSAir')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
@@ -28,7 +29,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_audio_crash_detected(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls,mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls):
+    def test_audio_crash_detected(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls,mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls, mock_gyro):
         """
         Scenario: Audio rileva crash.
         Atteso: Il sistema segnala pericolo (LED) e poi esce (exit).
@@ -37,6 +38,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
         mock_audio_instance = mock_audio_cls.return_value
         mock_audio_instance.crash_detected = True
         mock_led_instance = mock_led_cls.return_value
+        mock_gyro.return_value.get_status.return_value = {"led_command": "SAFE"}
         
         # 2. ESCAPE ROUTE: Mock exit() to not kill test runner when it executes
         with patch('builtins.exit', side_effect=SystemExit) as mock_exit:
@@ -51,6 +53,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
             print("   ✅ PASSED")
             
             
+    @patch('dms_core.DMSGyro')       
     @patch('dms_core.DMSAir')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
@@ -59,7 +62,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_alcohol_danger(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls):
+    def test_alcohol_danger(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls, mock_gyro):
         """
         Alcol rilevato -> LED Danger (Vince su Camera Safe)
         """
@@ -78,6 +81,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
         print("   ✅ PASSED")
         
     
+    @patch('dms_core.DMSGyro')
     @patch('dms_core.DMSAir')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
@@ -86,7 +90,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_air_danger(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls):
+    def test_air_danger(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls, mock_gyro):
         """
         Alcol rilevato -> LED Danger (Vince su Camera Safe)
         """
@@ -107,6 +111,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
         print("   ✅ PASSED")
 
 
+    @patch('dms_core.DMSGyro')
     @patch('dms_core.DMSAir')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
@@ -115,7 +120,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_safe(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls):
+    def test_camera_safe(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls, mock_gyro):
         """
         Scenario: Audio OK, Camera dice SAFE.
         Atteso: LED Safe.
@@ -138,6 +143,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
         print("   ✅ PASSED")
         
 
+    @patch('dms_core.DMSGyro')
     @patch('dms_core.DMSAir')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
@@ -146,7 +152,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_distraction_down(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls,mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls):
+    def test_camera_distraction_down(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls,mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls, mock_gyro):
         """
         Scenario: Audio OK, Camera dice DOWN.
         Atteso: LED Distraction Down.
@@ -166,13 +172,14 @@ class TestDMSCoreIntegration(unittest.TestCase):
         print("   ✅ PASSED")
         
 
+    @patch('dms_core.DMSGyro')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
     @patch('dms_core.DMSTemp')
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_no_face_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_light_cls, mock_cv2):
+    def test_camera_no_face_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_light_cls, mock_cv2, mock_gyro):
         """
         Scenario: Audio OK, Camera restituisce None (nessun volto).
         Atteso: LED Alert (Anomalia/Standby).
@@ -196,13 +203,14 @@ class TestDMSCoreIntegration(unittest.TestCase):
         print("   ✅ PASSED")
         
 
+    @patch('dms_core.DMSGyro')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
     @patch('dms_core.DMSTemp')
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_camera_explicit_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_light_cls, mock_cv2):
+    def test_camera_explicit_alert(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls, mock_light_cls, mock_cv2, mock_gyro):
         """
         Scenario: Camera restituisce esplicitamente comando ALERT.
         Atteso: LED Alert.
@@ -220,7 +228,8 @@ class TestDMSCoreIntegration(unittest.TestCase):
         mock_led_instance.signal_alert.assert_called()
         print("   ✅ PASSED")
         
-    
+        
+    @patch('dms_core.DMSGyro')
     @patch('dms_core.DMSAir')
     @patch('dms_core.cv2')
     @patch('dms_core.DMSLight')
@@ -229,7 +238,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
     @patch('dms_core.DMSAudio')
     @patch('dms_core.DMSCamera')
     @patch('dms_core.DMSLed')
-    def test_polling(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls,mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls):
+    def test_polling(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls,mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls, mock_gyro):
         """
         Scenario: Verifica che i sensori di temperatura e luce vengano invocati
         """
@@ -251,6 +260,38 @@ class TestDMSCoreIntegration(unittest.TestCase):
             # Verifica chiamata luce
             mock_light_instance.get_status.assert_called()
             
+            print("   ✅ PASSED")
+    
+    @patch('dms_core.DMSGyro')
+    @patch('dms_core.DMSAir')
+    @patch('dms_core.cv2')
+    @patch('dms_core.DMSLight')
+    @patch('dms_core.DMSAlcohol')
+    @patch('dms_core.DMSTemp')
+    @patch('dms_core.DMSAudio')
+    @patch('dms_core.DMSCamera')
+    @patch('dms_core.DMSLed')
+    def test_gyro_crash(self, mock_led_cls, mock_cam_cls, mock_audio_cls, mock_temp_cls,mock_alc_cls, mock_light_cls, mock_cv2, mock_air_cls, mock_gyro):
+        """Scenario: Gyro rileva crash -> LED DANGER"""
+        self._setup_light_mock(mock_light_cls)
+        mock_audio_instance = mock_audio_cls.return_value
+        mock_audio_instance.crash_detected = False
+        mock_led_instance = mock_led_cls.return_value
+        mock_gyro.return_value.get_status.return_value = {
+            "led_command": "DANGER",
+            "g_force": 4.5,
+            "priority": 4
+        }
+
+        with patch('builtins.exit', side_effect=SystemExit) as mock_exit:
+            try:
+                dms_core.main()
+            except SystemExit:
+                pass
+
+            print("   Verifica: Gyroscope Crash -> LED Danger + Exit")
+            mock_led_instance.signal_danger.assert_called_once()
+            mock_exit.assert_called_once()
             print("   ✅ PASSED")
         
 
