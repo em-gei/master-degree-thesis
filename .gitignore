@@ -1,5 +1,8 @@
 /__pycache__
 /venv
-/src/sensors_impl/__pycache__
 /tests/__pycache__
+/src/sensors_impl/__pycache__
+/src/units_impl/__pycache__
+/tests/sensors_impl/__pycache__
+/tests/units_impl/__pycache__
 .idea

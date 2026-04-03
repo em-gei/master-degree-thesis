@@ -1,0 +1,122 @@
+import time
+import numpy as np
+import joblib
+import pandas as pd
+from collections import deque
+from dms_camera import DMSCamera
+
+class BehavioralUnit:
+    def __init__(self, shared_gyro_sensor, model_path="lightgbm_model.pkl"):
+        """
+        Initializes the ML-based behavioral unit.
+        Args:
+            shared_gyro_sensor: The DMSGyro instance (shared with CriticalUnit to prevent I2C conflicts).
+            model_path (str): Path to the trained LightGBM model file.
+        """
+        print("Initializing Behavioral & Kinematic Unit (LightGBM)...")
+        self.camera_sensor = DMSCamera()
+        self.gyro_sensor = shared_gyro_sensor
+        # Buffer to hold historical data for the 3-second rolling window
+        # deque allows fast O(1) appends and pops from both ends
+        self.history = deque()
+        self.ROLLING_WINDOW_SECONDS = 3.0
+        # Load the Pre-trained LightGBM Model
+        try:
+            self.model = joblib.load(model_path)
+            self.model_loaded = True
+            print("LightGBM Model loaded successfully.")
+        except Exception as e:
+            print(f"Warning: ML Model not found at {model_path}. Running in fallback mode.")
+            self.model_loaded = False
+
+    def get_data(self):
+        """
+        Polls camera and gyro, updates the rolling window, calculates std/mean, 
+        and requests a prediction from LightGBM.
+        Returns:
+            dict: {"prediction": str} (e.g., "VIGILE", "SONNOLENZA", "MALORE", "DISTRAZIONE")
+        """
+        current_time = time.time()
+        
+        # --- 1. FETCH RAW METRICS FROM SENSORS ---
+        cam_status = self.camera_sensor.get_status()
+        gyro_status = self.gyro_sensor.get_status()
+        
+        # Extract Camera Data (Dictionary)
+        ear = 0.30 # Default safe EAR
+        pitch = 0.0
+        yaw = 0.0
+        if cam_status and "raw_metrics" in cam_status:
+            ear = cam_status["raw_metrics"].get("ear", 0.30)
+            pitch = cam_status["raw_metrics"].get("pitch", 0.0)
+            yaw = cam_status["raw_metrics"].get("yaw", 0.0)
+            
+        # Extract Gyro Data (Dictionary)
+        acc_x, acc_y, acc_z = 0.0, 0.0, 0.0
+        if gyro_status and "raw_acc" in gyro_status:
+            acc_x = gyro_status["raw_acc"].get("acc_x", 0.0)
+            acc_y = gyro_status["raw_acc"].get("acc_y", 0.0)
+            acc_z = gyro_status["raw_acc"].get("acc_z", 0.0)
+
+        # --- 2. UPDATE ROLLING WINDOW ---
+        self.history.append({
+            "timestamp": current_time,
+            "ear": ear,
+            "pitch": pitch,
+            "yaw": yaw,
+            "acc_x": acc_x,
+            "acc_y": acc_y,
+            "acc_z": acc_z
+        })
+
+        # Remove old data that falls outside the 3-second window
+        while self.history and (current_time - self.history[0]["timestamp"]) > self.ROLLING_WINDOW_SECONDS:
+            self.history.popleft()
+
+        # --- 3. PREDICT ---
+        # If the ML model failed to load, or we don't have enough data yet (< 1 second)
+        # we return a safe default to prevent system crashes at boot.
+        if not self.model_loaded or len(self.history) < 5:
+            return {"prediction": "VIGILE"}
+
+        # Calculate exactly the metrics requested by the LightGBM learning curve
+        features = self._calculate_rolling_features()
+        
+        # The model expects a 2D array or a DataFrame. 
+        # Using a DataFrame with columns ensures LightGBM matches features correctly
+        df_features = pd.DataFrame([features])
+        
+        try:
+            # Output of predict is usually an array, e.g., ['SONNOLENZA']
+            prediction_array = self.model.predict(df_features)
+            prediction = str(prediction_array[0])
+            return {"prediction": prediction}
+        except Exception as e:
+            print(f"ML Prediction Error: {e}")
+            return {"prediction": "VIGILE"}
+
+    def _calculate_rolling_features(self):
+        """
+        Extracts temporal features (mean, min, std) from the current buffer.
+        """
+        # Convert deque of dicts to a dictionary of lists for easier numpy math
+        data = {k: [dic[k] for dic in self.history] for k in self.history[0]}
+        
+        return {
+            "EAR_mean_3s": np.mean(data["ear"]),
+            "EAR_min_3s": np.min(data["ear"]),
+            "Pitch_std_3s": np.std(data["pitch"]),
+            "Yaw_std_3s": np.std(data["yaw"]),
+            "Gyro_X_std_3s": np.std(data["acc_x"]),
+            "Gyro_Y_std_3s": np.std(data["acc_y"]),
+            "Gyro_Z_std_3s": np.std(data["acc_z"])
+        }
+
+    def stop(self):
+        """Safely shuts down the camera."""
+        # Gyro is not stopped here since it's shared and will be stopped by CriticalUnit
+        try:
+            # Assuming DMSCamera has a stop/release method
+            self.camera_sensor.picam2.stop()
+        except:
+            pass

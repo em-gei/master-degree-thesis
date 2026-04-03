@@ -1,0 +1,20 @@
+# --- Core Math & Data Libraries ---
+numpy
+pandas
+joblib
+lightgbm
+scikit-learn
+
+# --- Computer Vision & Media ---
+opencv-contrib-python
+mediapipe
+
+# --- Hardware Abstraction (Adafruit & GPIO) ---
+adafruit-blinka
+adafruit-circuitpython-mpu6050
+adafruit-circuitpython-tsl2591
+adafruit-circuitpython-dht
+gpiozero
+
+# --- Audio Support ---
+pyaudio
