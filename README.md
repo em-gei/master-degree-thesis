@@ -2,7 +2,7 @@
 
 UNIT TESTS
 To run all tests together:
-- sh ./test/run_tests.sh
+- sh ./test/sensors_impl/run_tests.sh
 
 To run test indipendentely (example):
-- python -m unittest test.dms_led_tests
+- python -m unittest tests.sensors_impl.dms_led_tests
