@@ -17,8 +17,8 @@ class TestDMSAudio(unittest.TestCase):
     
     @patch('dms_audio.pyaudio.PyAudio')
     def setUp(self, _):
-        print(f"\n🔵 [AUDIO TEST START] {self._testMethodName}")
-        self.audio_system = dms_audio.DMSAudio(device_index=0)
+        print(f"\n[AUDIO TEST START] {self._testMethodName}")
+        self.audio_system = dms_audio.DMSAudio(device_index=0, threshold_db=85)
         self.mock_pa_instance = self.audio_system.p
         self.mock_stream = MagicMock()
         self.mock_pa_instance.open.return_value = self.mock_stream
@@ -30,7 +30,7 @@ class TestDMSAudio(unittest.TestCase):
         self.assertEqual(self.audio_system.device_index, 0)
         self.assertFalse(self.audio_system.running)
         self.assertFalse(self.audio_system.crash_detected)
-        print("   ✅ PASSED: Inizializzazione corretta.")
+        print("PASSED: Inizializzazione corretta.")
 
 
     def test_start_listening(self):
@@ -46,7 +46,7 @@ class TestDMSAudio(unittest.TestCase):
             
             mock_thread.return_value.start.assert_called_once()
             self.assertTrue(self.audio_system.running)
-            print("   ✅ PASSED: Stream audio aperto e thread avviato.")
+            print("PASSED: Stream audio aperto e thread avviato.")
 
 
     def test_stop(self):
@@ -60,7 +60,7 @@ class TestDMSAudio(unittest.TestCase):
         self.mock_stream.stop_stream.assert_called_once()
         self.mock_stream.close.assert_called_once()
         self.mock_pa_instance.terminate.assert_called_once()
-        print("   ✅ PASSED: Risorse rilasciate correttamente.")
+        print("PASSED: Risorse rilasciate correttamente.")
 
 
     def test_monitor_loop_quiet(self):
@@ -77,7 +77,7 @@ class TestDMSAudio(unittest.TestCase):
         
         self.audio_system._monitor_loop()
         self.assertFalse(self.audio_system.crash_detected)
-        print("   ✅ PASSED: Nessun allarme con audio silenzioso.")
+        print("PASSED: Nessun allarme con audio silenzioso.")
         
 
     def test_monitor_loop_loud_crash(self):
@@ -95,7 +95,7 @@ class TestDMSAudio(unittest.TestCase):
         self.audio_system.running = True
         self.audio_system._monitor_loop()
         self.assertTrue(self.audio_system.crash_detected)
-        print("   ✅ PASSED: Allarme RILEVATO con audio forte.")
+        print("PASSED: Allarme RILEVATO con audio forte.")
         
 
 if __name__ == '__main__':

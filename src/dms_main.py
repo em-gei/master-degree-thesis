@@ -1,5 +1,13 @@
 import time
+import sys
+import os
 import cv2
+
+# --- PATH SETUP ---
+# Add source directories so bare imports work regardless of PYTHONPATH.
+_base = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(_base, 'sensors_impl'))
+sys.path.insert(0, os.path.join(_base, 'units_impl'))
 
 # --- HARDWARE & UI IMPORTS ---
 try:
@@ -26,8 +34,7 @@ def main():
     led_system = DMSLed()
 
     # 2. INITIALIZE ARCHITECTURE UNITS
-    critical_unit = CriticalUnit()
-    critical_unit.gyro_sensor = shared_gyro # Inject shared gyro
+    critical_unit = CriticalUnit(shared_gyro=shared_gyro)
     
     environment_unit = EnvironmentUnit()
     behavioral_unit = BehavioralUnit(shared_gyro_sensor=shared_gyro)
@@ -89,6 +96,7 @@ def main():
         critical_unit.stop()
         environment_unit.stop()
         behavioral_unit.stop()
+        led_system.close()
         cv2.destroyAllWindows()
         print("Shutdown complete. Goodbye!")
 

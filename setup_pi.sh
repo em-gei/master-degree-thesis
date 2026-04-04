@@ -33,8 +33,10 @@ sudo raspi-config nonint do_i2c 0
 sudo raspi-config nonint do_camera 0
 
 # 4. Set up Python Virtual Environment
+# --system-site-packages is required so the venv can access system-level
+# packages like picamera2 which are installed via apt (step 6).
 echo "[4/6] Creating Python virtual environment (venv)..."
-python3 -m venv venv
+python3 -m venv venv --system-site-packages
 source venv/bin/activate
 
 # 5. Install Python Packages
@@ -55,7 +57,7 @@ echo "-------------------------------------------------------"
 echo "SETUP COMPLETE!"
 echo "-------------------------------------------------------"
 echo "To start the system, run:"
-echo "source venv/bin/activate"
-echo "python src/dms_main.py"
+echo "  source venv/bin/activate"
+echo "  python src/dms_main.py"
 echo "-------------------------------------------------------"
 echo "NOTE: A reboot is recommended to finalize interface activation."

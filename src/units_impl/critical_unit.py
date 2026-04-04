@@ -2,13 +2,17 @@ from dms_alcohol import DMSAlcohol
 from dms_gyro import DMSGyro
 
 class CriticalUnit:
-    def __init__(self):
+    def __init__(self, shared_gyro=None):
         """
         Initializes the hardware abstraction layers for critical safety sensors.
+
+        Args:
+            shared_gyro: Optional shared DMSGyro instance to avoid I2C conflicts.
+                         If None, a new DMSGyro is created internally.
         """
         print("Initializing Critical Unit...")
         self.alcohol_sensor = DMSAlcohol()
-        self.gyro_sensor = DMSGyro()
+        self.gyro_sensor = shared_gyro if shared_gyro else DMSGyro()
 
     def get_data(self):
         """

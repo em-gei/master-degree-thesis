@@ -38,13 +38,14 @@ class TestBehavioralUnit(unittest.TestCase):
         for i in range(6):
             # Advance time by 0.5s each frame
             mock_time.return_value = 100.0 + (i * 0.5)
-            
-            # Feed raw numbers from HAL
-            self.mock_camera.get_status.return_value = {
-                "raw_metrics": {"ear": 0.25, "pitch": 5.0, "yaw": 2.0}
+
+            # Feed raw numbers
+            self.mock_camera.get_raw_data.return_value = {
+                "face_detected": True, "ear": 0.25, "pitch": 5.0, "yaw": 2.0
             }
-            self.mock_gyro.get_status.return_value = {
-                "raw_acc": {"acc_x": 0.1, "acc_y": 0.2, "acc_z": 9.8}
+            self.mock_gyro.get_raw_data.return_value = {
+                "accel_x": 0.1, "accel_y": 0.2, "accel_z": 9.8,
+                "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0
             }
             
             result = self.unit.get_data()
@@ -76,11 +77,20 @@ class TestBehavioralUnit(unittest.TestCase):
         # Force the fake model to detect a medical emergency
         self.mock_model.predict.return_value = ["MALORE"]
         
+        # Provide raw data so buffer entries have real values
+        self.mock_camera.get_raw_data.return_value = {
+            "face_detected": True, "ear": 0.15, "pitch": -25.0, "yaw": 0.0
+        }
+        self.mock_gyro.get_raw_data.return_value = {
+            "accel_x": 0.0, "accel_y": 0.0, "accel_z": 9.8,
+            "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0
+        }
+
         # Fill buffer instantly to trigger prediction
         for i in range(5):
             mock_time.return_value = 100.0 + i
             self.unit.get_data()
-            
+
         result = self.unit.get_data()
         self.assertEqual(result["prediction"], "MALORE")
 

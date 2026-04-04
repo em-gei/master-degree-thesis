@@ -39,24 +39,18 @@ class BehavioralUnit:
         current_time = time.time()
         
         # --- 1. FETCH RAW METRICS FROM SENSORS ---
-        cam_status = self.camera_sensor.get_status()
-        gyro_status = self.gyro_sensor.get_status()
-        
-        # Extract Camera Data (Dictionary)
-        ear = 0.30 # Default safe EAR
-        pitch = 0.0
-        yaw = 0.0
-        if cam_status and "raw_metrics" in cam_status:
-            ear = cam_status["raw_metrics"].get("ear", 0.30)
-            pitch = cam_status["raw_metrics"].get("pitch", 0.0)
-            yaw = cam_status["raw_metrics"].get("yaw", 0.0)
-            
-        # Extract Gyro Data (Dictionary)
-        acc_x, acc_y, acc_z = 0.0, 0.0, 0.0
-        if gyro_status and "raw_acc" in gyro_status:
-            acc_x = gyro_status["raw_acc"].get("acc_x", 0.0)
-            acc_y = gyro_status["raw_acc"].get("acc_y", 0.0)
-            acc_z = gyro_status["raw_acc"].get("acc_z", 0.0)
+        cam_raw = self.camera_sensor.get_raw_data() or {}
+        gyro_raw = self.gyro_sensor.get_raw_data() or {}
+
+        # Extract Camera Data
+        ear = cam_raw.get("ear", 0.30)
+        pitch = cam_raw.get("pitch", 0.0)
+        yaw = cam_raw.get("yaw", 0.0)
+
+        # Extract Gyro Data
+        acc_x = gyro_raw.get("accel_x", 0.0)
+        acc_y = gyro_raw.get("accel_y", 0.0)
+        acc_z = gyro_raw.get("accel_z", 0.0)
 
         # --- 2. UPDATE ROLLING WINDOW ---
         self.history.append({
@@ -114,9 +108,8 @@ class BehavioralUnit:
 
     def stop(self):
         """Safely shuts down the camera."""
-        # Gyro is not stopped here since it's shared and will be stopped by CriticalUnit
+        # Gyro is not stopped here since it's shared and will be stopped by the caller
         try:
-            # Assuming DMSCamera has a stop/release method
-            self.camera_sensor.picam2.stop()
+            self.camera_sensor.stop()
         except:
             pass
