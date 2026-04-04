@@ -45,6 +45,17 @@ class DMSLight:
             }
         except Exception:
             return None
+    
+    
+    def get_raw_data(self):
+        if not self.active or not self.sensor:
+            return None
+        try:
+            return {
+                "lux": round(self.sensor.lux, 2)
+            }
+        except Exception:
+            return None
 
 
     def stop(self):

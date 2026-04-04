@@ -71,6 +71,13 @@ class DMSAlcohol:
                 "ui_text": "Sobrio"
             }
             
+    def get_raw_data(self):
+        if not self.active or not self.sensor_pin:
+            return None
+        return {
+            "pin_value": self.sensor_pin.value 
+        }
+            
 
     def stop(self):
         self._close_alert_window()

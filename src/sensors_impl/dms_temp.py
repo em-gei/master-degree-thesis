@@ -77,6 +77,18 @@ class DMSTemp:
             print(f"Errore Temp UI: {e}")
             return None
         
+    
+    def get_raw_data(self):
+        if not self.active or not self.dht_device:
+            return None
+        try:
+            return {
+                "temperature": round(self.dht_device.temperature, 1),
+                "humidity": round(self.dht_device.humidity, 1)
+            }
+        except Exception:
+            return None
+        
 
     def stop(self):
         try:
