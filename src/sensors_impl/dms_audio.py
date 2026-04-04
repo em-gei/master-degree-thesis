@@ -10,7 +10,7 @@ CHANNELS = 1
 RATE = 44100       # Hz (Sampling Rate)
 
 class DMSAudio:
-    def __init__(self, device_index=None, threshold_db=85):
+    def __init__(self, device_index=None, threshold_db=100):
         self.p = pyaudio.PyAudio()
         self.stream = None
         self.running = False
@@ -18,6 +18,8 @@ class DMSAudio:
         self.THRESHOLD_DB = threshold_db
         # Microphone ID (If None, uses default, but better to specify)
         self.device_index = device_index
+        # --- Variabile di stato per i dati grezzi (Thread-Safe) ---
+        self.current_db = 0.0
 
     def start_listening(self):
         """Starts the separate listening thread"""
@@ -58,20 +60,35 @@ class DMSAudio:
                 else:
                     db = 0
 
+                # 1. Aggiorniamo la variabile per get_raw_data()
+                self.current_db = db
+
                 # CRASH / ANOMALY CHECK
                 if db > self.THRESHOLD_DB:
                     print(f"\nLOUD NOISE DETECTED: {db:.2f} dB!")
                     self.crash_detected = True
-                    # Optional: Short pause to avoid registering the same bang 100 times
-                    time.sleep(2) 
+                else:
+                    self.crash_detected = False
 
+            except IOError:
+                # Se c'è un micro-salto hardware, lo ignoriamo per non far crashare tutto
+                pass
             except Exception as e:
                 print(f"Audio Loop Error: {e}")
                 break
+            
+    def get_raw_data(self):
+        if not self.running:
+            return None
+        return {
+            "decibel": round(self.current_db, 2)
+        }
+        
 
     def stop(self):
         """Stops everything cleanly"""
         self.running = False
+        time.sleep(0.1) # Dà tempo al thread di fermarsi dolcemente
         if self.stream:
             self.stream.stop_stream()
             self.stream.close()

@@ -1,0 +1,87 @@
+WEB APP
+Si crea un mini server in Python con Flask sul Raspberry che gira in background.
+L'assistente di guida si collega all'IP del Raspberry dal browser del telefono e vede una pagina web con 7 bottoni per etichettare gli stati (aggiorna la variabile Label_ML nel logger).
+
+L'implementazione di questo approccio offre diversi vantaggi:
+- Risparmio di risorse: rimuovendo la UI grafica di OpenCV (cv2.imshow), si risparmia CPU e RAM del Raspberry Pi (previene surriscaldamenti e cali di tensione causati dal powerbank).
+- Immunità ai distacchi di rete: se l'hotspot del telefono perde il segnale la pagina web sul telefono smette di rispondere ma lo script Python sul Raspberry continuerà a girare in background registrando nel CSV senza interruzioni (con SSH lo script sarebbe crashato).
+- Ergonomia: l'assistente dovrà premere solamente dei pulsanti sull0 schermo del suo smartphone, più semplice che avere un pc portatile.
+
+
+IMPLEMENTAZIONE
+#Prerequsiti
+1) Installazione di Flask sul Raspberry Pi
+- pip install Flask
+
+2) Installazione Xvfb (emulatore di monitor)
+- sudo apt update
+- sudo apt install xvfb
+
+2) Installazione tmux per salvaguardare la sessione in caso di degrado connessione
+- sudo apt install tmux
+
+2) Crezione logger specifico (dms_logger_web.py)
+
+3) Abilitazione SSH su Raspberry Pi
+- sudo raspi-config
+- Click on Interface Options
+- Enable SSH
+- exit from raspi-config
+
+#Esecuzione
+4) Collega PC e raspberry PI all'hotspot dello smartphone
+
+5) Individua IP raspberry
+- Dalle impostazioni hostpost andare su "dispositivi connessi" e recuperare MAC del raspberry pi
+- Dal terminale del pc `arp -a`
+- Cercare l'indirizzo MAC tra quelli restituiti per ottenere l'indirizzo IP
+
+6) Connession SSH
+- Da terminale del pc collegarsi al raspberry `ssh ippoz@indirizzo_ip`
+
+7) Attivare tmux per preservare la sessione, attivare ambiente virtuale e lanciare il logger
+- tmux
+- source venv/bin/activate
+- xvfb-run -a python dms_logger_web.py      (-a sta per "auto": cerca automaticamente un numero di display virtuale libero per non creare conflitti)
+
+8) Se l'SSH cade il raspberry continuerà a registrare in background. Per riprendere il controllo:
+- ssh ippoz@indirizzo_ip
+- tmux attach.
+
+
+
+**** RIEPILOGO ****
+[1] PC portatile
+    - E' il quadro di comando per connettersi in SSH e lanciare lo script di log.
+[2] Smartphone
+    - E' il pannello di controllo per interagire con lo script di logging ed etichettare gli stati
+[3] Raspberry PI
+    - Esegue fisicamente lo script di logging salvando i dati registrati dai sensori
+*******************
+
+
+RACCOLTA dati
+[1] Installazione del Raspberry Pi e dei sensori all'interno del veicolo ed Esecuzione test di guida
+[2] Creazione dataset con l'insieme di tutte le rilevazioni eseguite
+[3] Definizione algoritmo 
+    - 8000-9000 record è una quantità di dati più che sufficiente per addestrare un algoritmo solido e capire se l'hardware funziona bene. 
+    Gli algoritmi ad albero non hanno bisogno dei milioni di record necessari alle Reti Neurali Profonde.
+    - il problema in questo caso non è il totale ma il bilanciamento degli scenari (ci saranno molti più VIGILE che CRASH)
+    - Data augmentatio non è la risposta a questo problema perchè potrebbe generare dei dati con assenza di correlazione fisica
+    e/o creando dati inverosimili rendendo quindi inaffidabile il sistema.
+    - La soluzione è usare tecniche matematiche durante l'addestramento del modello attraverso:
+        - Class Weighting, diciamo all'algoritmo che un errore nella classificazione di CRASH ad esempio è 1000 volte 
+        più severa di quella per VIGILE
+        - SMOTE (Synthetic Minority Over-sampling Technique): se i dati di CRASH ad esempio sono troppi pochi si userà questa
+        libreria che non inventa dati ma interpola geometricamente i vettori solo tra i punti reali esistenti della classe
+[4] Esecuzione algoritmo
+
+NB: 
+    * Se tieni la luce nel modello, il giorno che guiderai di notte o in galleria, l'algoritmo andrà in tilt classificando stati a caso. Anche Light_Lux deve essere eliminato dalla fase decisionale 
+    (oppure va usato un dataset enorme con giorni, notti e temporali per bilanciarlo).
+    * Il Cambio di Paradigma: Dagli "Istanti" al "Tempo"
+    L'hardware è ottimo, ma stiamo sbagliando approccio matematico. Per riconoscere il colpo di sonno o la distrazione continua, l'algoritmo non deve guardare la singola riga del CSV, ma deve guardare la media degli ultimi 3 secondi.
+    * Se l'EAR è basso per una riga, è un battito di ciglia (VIGILE). Se l'EAR è costantemente basso per 6 righe consecutive (3 secondi), è SONNOLENZA.
+    Questo concetto in Data Science si chiama Rolling Window (Finestra Mobile) o Feature Engineering Temporale.
+    * Invece di far generare dati falsi (Data Augmentation), l'approccio industriale corretto è manipolare i dati esistenti per creare nuove colonne che rappresentano "lo storico" recente del sensore 
+    (es. la varianza del Pitch negli ultimi 5 secondi, o la media dell'EAR).

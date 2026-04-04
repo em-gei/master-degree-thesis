@@ -193,6 +193,49 @@ class DMSCamera:
         cv2.imshow('DMS', anonymous_view)
         return decision
     
+    
+    def get_raw_data(self):
+        if not self.picam2:
+            return None
+            
+        w, h = 640, 480
+        focal_length = 1 * w
+        cam_matrix = np.array([[focal_length, 0, w/2], [0, focal_length, h/2], [0, 0, 1]])
+        dist_matrix = np.zeros((4, 1), dtype=np.float64)
+        
+        # 1. Hardware acquisition
+        image = self.picam2.capture_array()
+        if image is None: 
+            return None
+        if image.shape[2] == 4: 
+            image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+            
+        # 2. MediaPipe Inference
+        image.flags.writeable = False
+        results = self.face_mesh.process(image)
+        
+        # 3. Data extraction
+        if results.multi_face_landmarks:
+            for face_landmarks in results.multi_face_landmarks:
+                lm = face_landmarks.landmark
+                left_ear = self.calculate_ear(lm, self.LEFT_EYE, w, h)
+                right_ear = self.calculate_ear(lm, self.RIGHT_EYE, w, h)
+                avg_ear = (left_ear + right_ear) / 2.0
+                pitch, yaw, _ = self.get_head_pose(lm, w, h, cam_matrix, dist_matrix)
+                return {
+                    "face_detected": True,
+                    "pitch": round(pitch, 2),
+                    "yaw": round(yaw, 2),
+                    "ear": round(avg_ear, 3)   # Eye Aspect Ratio
+                }
+        else:
+            return {
+                "face_detected": False,
+                "pitch": 0.0,
+                "yaw": 0.0,
+                "ear": 0.0
+            }
+    
 
     def stop(self):
         self.picam2.stop()

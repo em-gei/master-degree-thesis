@@ -50,6 +50,24 @@ class DMSGyro:
         except Exception:
             return None
         
+        
+    def get_raw_data(self):
+        if not self.active or not self.sensor:
+            return None
+        try:
+            acc_x, acc_y, acc_z = self.sensor.acceleration
+            gyr_x, gyr_y, gyr_z = self.sensor.gyro
+            return {
+                "accel_x": round(acc_x, 3),
+                "accel_y": round(acc_y, 3),
+                "accel_z": round(acc_z, 3),
+                "gyro_x": round(gyr_x, 3),
+                "gyro_y": round(gyr_y, 3),
+                "gyro_z": round(gyr_z, 3)
+            }
+        except Exception:
+            return None
+        
 
     def stop(self):
         pass
