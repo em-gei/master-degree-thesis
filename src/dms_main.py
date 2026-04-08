@@ -8,6 +8,11 @@ if "--headless" in sys.argv:
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
     sys.argv.remove("--headless")
 
+# Suppress Qt font warnings by pointing to system fonts if available.
+_sys_fonts = "/usr/share/fonts/truetype"
+if os.path.isdir(_sys_fonts):
+    os.environ.setdefault("QT_QPA_FONTDIR", _sys_fonts)
+
 import cv2
 
 # --- PATH SETUP ---
@@ -44,7 +49,10 @@ def main():
     critical_unit = CriticalUnit(shared_gyro=shared_gyro)
     
     environment_unit = EnvironmentUnit()
-    behavioral_unit = BehavioralUnit(shared_gyro_sensor=shared_gyro)
+    # Model path is relative to the project root (one level above src/)
+    _project_root = os.path.dirname(_base)
+    _model_path = os.path.join(_project_root, "lightgbm_model.pkl")
+    behavioral_unit = BehavioralUnit(shared_gyro_sensor=shared_gyro, model_path=_model_path)
     
     # 3. INITIALIZE DECISION ENGINE
     arbitrator = PriorityArbitrator()
