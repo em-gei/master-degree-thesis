@@ -8,9 +8,9 @@ echo "-------------------------------------------------------"
 echo "Starting DMS Setup for Raspberry Pi..."
 echo "-------------------------------------------------------"
 
-# 1. Update System
-echo "[1/6] Updating system packages..."
-sudo apt-get update && sudo apt-get upgrade -y
+# 1. Update Package Index
+echo "[1/6] Updating package index..."
+sudo apt-get update
 
 # 2. Install System-level Dependencies
 # Necessary for OpenCV, PyAudio, MediaPipe and Python development
@@ -22,10 +22,9 @@ sudo apt-get install -y \
     libportaudio2 \
     portaudio19-dev \
     libatlas-base-dev \
-    libopencv-dev \
+    libturbojpeg0-dev \
     i2c-tools \
-    libgpiod-dev \
-    libcap-dev
+    libgpiod-dev
 
 # 3. Enable Hardware Interfaces (Non-interactive)
 echo "[3/6] Enabling I2C and Camera interfaces..."
@@ -49,6 +48,11 @@ pip install -r requirements.txt
 # Picamera2 is often best managed via apt on Pi
 echo "[6/6] Finalizing camera and permission settings..."
 sudo apt-get install -y python3-picamera2
+
+# Recompile simplejpeg inside the venv to match the venv's numpy ABI.
+# The system simplejpeg (from python3-picamera2) is compiled against the
+# system numpy and causes "dtype size changed" errors with the venv's numpy.
+pip install simplejpeg --force-reinstall --no-cache-dir
 
 # Add user to 'video' and 'input' groups just in case
 sudo usermod -a -G video,input,i2c $USER

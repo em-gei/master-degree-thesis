@@ -1,6 +1,13 @@
 import time
 import sys
 import os
+
+# --headless flag: run without a display (SSH / no monitor).
+# Without the flag, OpenCV windows are shown normally (desktop mode).
+if "--headless" in sys.argv:
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    sys.argv.remove("--headless")
+
 import cv2
 
 # --- PATH SETUP ---

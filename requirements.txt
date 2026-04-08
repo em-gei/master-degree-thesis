@@ -1,9 +1,10 @@
 # --- Core Math & Data Libraries ---
-numpy
+# numpy>=2.0 is required to match the system picamera2 C extensions (simplejpeg)
+# which are compiled against numpy 2.x on Raspberry Pi.
+numpy>=2.0
 pandas
 joblib
 lightgbm
-scikit-learn
 
 # --- Computer Vision & Media ---
 opencv-contrib-python
