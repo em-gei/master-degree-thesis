@@ -1,3 +1,4 @@
+import os
 import time
 import cv2
 import numpy as np
@@ -18,6 +19,7 @@ PITCH_DOWN_THRESH = -20
 class DMSCamera:
     def __init__(self):
         print("Inizializzazione Camera")
+        self.headless = os.environ.get("DMS_HEADLESS") == "1"
         try:
             self.picam2 = Picamera2()
             config = self.picam2.create_preview_configuration(main={"size": (640, 480), "format": "XRGB8888"})
@@ -186,11 +188,12 @@ class DMSCamera:
                 "text": current_status
             }
 
-        # UI Text
-        cv2.putText(anonymous_view, current_status, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, current_color, 2)
-        debug_info = f"EAR: {avg_ear:.2f} | P: {int(pitch)} | Y: {int(yaw)}"
-        cv2.putText(anonymous_view, debug_info, (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
-        cv2.imshow('DMS', anonymous_view)
+        # UI Text (only in desktop mode)
+        if not self.headless:
+            cv2.putText(anonymous_view, current_status, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, current_color, 2)
+            debug_info = f"EAR: {avg_ear:.2f} | P: {int(pitch)} | Y: {int(yaw)}"
+            cv2.putText(anonymous_view, debug_info, (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
+            cv2.imshow('DMS', anonymous_view)
         return decision
     
     
@@ -214,7 +217,7 @@ class DMSCamera:
         image.flags.writeable = False
         results = self.face_mesh.process(image)
         
-        # 3. Data extraction
+        # 3. Data extraction & display
         if results.multi_face_landmarks:
             for face_landmarks in results.multi_face_landmarks:
                 lm = face_landmarks.landmark
@@ -222,6 +225,18 @@ class DMSCamera:
                 right_ear = self.calculate_ear(lm, self.RIGHT_EYE, w, h)
                 avg_ear = (left_ear + right_ear) / 2.0
                 pitch, yaw, _ = self.get_head_pose(lm, w, h, cam_matrix, dist_matrix)
+
+                # Draw landmarks (only in desktop mode)
+                if not self.headless:
+                    anonymous_view = np.zeros((h, w, 3), dtype=np.uint8)
+                    for idx in self.LEFT_EYE + self.RIGHT_EYE + self.FACE_3D_INDEXES:
+                        pt = (int(lm[idx].x * w), int(lm[idx].y * h))
+                        cv2.circle(anonymous_view, pt, 2, (0, 255, 0), -1)
+                    debug_info = f"EAR: {avg_ear:.2f} | P: {int(pitch)} | Y: {int(yaw)}"
+                    cv2.putText(anonymous_view, debug_info, (10, h - 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
+                    cv2.imshow('DMS', anonymous_view)
+
                 return {
                     "face_detected": True,
                     "pitch": round(pitch, 2),
@@ -229,6 +244,11 @@ class DMSCamera:
                     "ear": round(avg_ear, 3)   # Eye Aspect Ratio
                 }
         else:
+            if not self.headless:
+                anonymous_view = np.zeros((h, w, 3), dtype=np.uint8)
+                cv2.putText(anonymous_view, "NESSUN VOLTO RILEVATO", (10, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                cv2.imshow('DMS', anonymous_view)
             return {
                 "face_detected": False,
                 "pitch": 0.0,

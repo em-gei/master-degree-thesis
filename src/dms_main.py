@@ -6,6 +6,7 @@ import os
 # Without the flag, OpenCV windows are shown normally (desktop mode).
 if "--headless" in sys.argv:
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    os.environ["DMS_HEADLESS"] = "1"
     sys.argv.remove("--headless")
 
 # Suppress Qt font warnings by pointing to system fonts if available.
@@ -51,7 +52,7 @@ def main():
     environment_unit = EnvironmentUnit()
     # Model path is relative to the project root (one level above src/)
     _project_root = os.path.dirname(_base)
-    _model_path = os.path.join(_project_root, "lightgbm_model.pkl")
+    _model_path = os.path.join(_project_root, "src", "lightgbm_model.pkl")
     behavioral_unit = BehavioralUnit(shared_gyro_sensor=shared_gyro, model_path=_model_path)
     
     # 3. INITIALIZE DECISION ENGINE

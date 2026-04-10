@@ -1,3 +1,4 @@
+import os
 import board
 import digitalio
 import cv2
@@ -11,6 +12,7 @@ class DMSAir:
         self.active = True
         self.sensor_pin = None
         self.alert_window_open = False
+        self.headless = os.environ.get("DMS_HEADLESS") == "1"
         try:
             # Setup
             self.sensor_pin = digitalio.DigitalInOut(PIN_SENSOR)
@@ -24,6 +26,9 @@ class DMSAir:
 
     def _show_alert_window(self):
         """Crea la finestra Gialla UNA sola volta"""
+        if self.headless:
+            self.alert_window_open = True
+            return
         img = np.zeros((300, 500, 3), dtype=np.uint8)
         img[:] = (0, 255, 255) # Yellow
         text_color = (0, 0, 0) # Black

@@ -53,7 +53,7 @@ class EnvironmentUnit:
         if current_time - self.last_temp_check > 5.0:
             self.cached_temp_status = self.temp_sensor.get_status()
             self.last_temp_check = current_time
-            
+
         if self.cached_temp_status and self.cached_temp_status.get("led_command") == "ALERT":
             env_data["heat_stress"] = True
 
@@ -61,7 +61,7 @@ class EnvironmentUnit:
         if current_time - self.last_light_check > 2.0:
             self.cached_light_status = self.light_sensor.get_status()
             self.last_light_check = current_time
-            
+
         if self.cached_light_status and self.cached_light_status.get("light_mode") == "NIGHT":
             env_data["low_light"] = True
 

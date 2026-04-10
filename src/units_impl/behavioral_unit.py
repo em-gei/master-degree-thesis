@@ -26,7 +26,7 @@ class BehavioralUnit:
             self.model_loaded = True
             print("LightGBM Model loaded successfully.")
         except Exception as e:
-            print(f"Warning: ML Model not found at {model_path}. Running in fallback mode.")
+            print(f"Warning: ML Model not found at {model_path}. Running in fallback mode. Error: {e}")
             self.model_loaded = False
 
     def get_data(self):
