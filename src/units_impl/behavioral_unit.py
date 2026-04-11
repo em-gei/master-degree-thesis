@@ -20,6 +20,10 @@ class BehavioralUnit:
         # deque allows fast O(1) appends and pops from both ends
         self.history = deque()
         self.ROLLING_WINDOW_SECONDS = 3.0
+        # Direct drowsiness detection
+        self.EAR_THRESHOLD = 0.20
+        self.EAR_FRAMES_PER_ALARM = 10
+        self.blink_counter = 0
         # Load the Pre-trained LightGBM Model
         try:
             self.model = joblib.load(model_path)
@@ -67,27 +71,40 @@ class BehavioralUnit:
         while self.history and (current_time - self.history[0]["timestamp"]) > self.ROLLING_WINDOW_SECONDS:
             self.history.popleft()
 
-        # --- 3. PREDICT ---
+        # Raw camera snapshot for LED directional feedback
+        _cam_raw = {"pitch": pitch, "yaw": yaw, "ear": ear}
+
+        # --- 3. DIRECT DROWSINESS DETECTION (frame-by-frame, like dms_core) ---
+        # This provides immediate response without waiting for the ML rolling window.
+        if ear < self.EAR_THRESHOLD:
+            self.blink_counter += 1
+        else:
+            self.blink_counter = 0
+
+        if self.blink_counter >= self.EAR_FRAMES_PER_ALARM:
+            return {"prediction": "SONNOLENZA", "_cam_raw": _cam_raw}
+
+        # --- 4. ML PREDICT ---
         # If the ML model failed to load, or we don't have enough data yet (< 1 second)
         # we return a safe default to prevent system crashes at boot.
         if not self.model_loaded or len(self.history) < 5:
-            return {"prediction": "VIGILE"}
+            return {"prediction": "VIGILE", "_cam_raw": _cam_raw}
 
         # Calculate exactly the metrics requested by the LightGBM learning curve
         features = self._calculate_rolling_features()
-        
-        # The model expects a 2D array or a DataFrame. 
+
+        # The model expects a 2D array or a DataFrame.
         # Using a DataFrame with columns ensures LightGBM matches features correctly
         df_features = pd.DataFrame([features])
-        
+
         try:
             # Output of predict is usually an array, e.g., ['SONNOLENZA']
             prediction_array = self.model.predict(df_features)
             prediction = str(prediction_array[0])
-            return {"prediction": prediction}
+            return {"prediction": prediction, "_cam_raw": _cam_raw}
         except Exception as e:
             print(f"ML Prediction Error: {e}")
-            return {"prediction": "VIGILE"}
+            return {"prediction": "VIGILE", "_cam_raw": _cam_raw}
 
     def _calculate_rolling_features(self):
         """
