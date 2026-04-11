@@ -2,7 +2,20 @@
 
 UNIT TESTS
 To run all tests together:
-- sh ./test/sensors_impl/run_tests.sh
+- sh ./tests/run_tests.sh
 
-To run test indipendentely (example):
-- python -m unittest tests.sensors_impl.dms_led_tests
+To run all tests in a specific folder:
+- python -m unittest discover -s tests/sensors_impl -p "*_tests.py" -v
+
+To run test independently (example):
+- python -m unittest discover -s tests/sensors_impl -p "dms_led_tests.py" -v
+
+
+RUN RASPBERRY PI SETUP (in master-degree-thesis folder)
+- chmod +x setup_pi.sh
+- ./setup_pi.sh
+- sudo reboot
+- source venv/bin/activate
+- python src/dms_main.py              (with monitor attached)
+or
+- python src/dms_main.py --headless   (via SSH, no display)

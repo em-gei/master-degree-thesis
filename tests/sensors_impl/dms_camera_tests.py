@@ -22,7 +22,7 @@ class TestDMSCameraLogic(unittest.TestCase):
     
     @patch('dms_camera.Picamera2')
     def setUp(self, _):
-        print(f"\n🔵 {self._testMethodName}")
+        print(f"\n{self._testMethodName}")
         self.cam_system = dms_camera.DMSCamera()
         self.cam_system.blink_counter = 0
         self.fake_landmarks = [MockLandmark(0.0, 0.0) for _ in range(478)]
@@ -36,7 +36,7 @@ class TestDMSCameraLogic(unittest.TestCase):
         self.assertEqual(result["led_command"], "SAFE")
         self.assertEqual(result["blink_counter"], 0)
         self.assertFalse(result["alarm_triggered"])
-        print("   ✅ PASSED: Safe Driving identified.")
+        print("PASSED: Safe Driving identified.")
         
 
     def test_case_cellphone_distraction(self):
@@ -46,7 +46,7 @@ class TestDMSCameraLogic(unittest.TestCase):
         
         self.assertEqual(result["led_command"], "DOWN")
         self.assertIn("CELLULARE", result["text"])
-        print("   ✅ PASSED: Cellphone distraction identified.")
+        print("PASSED: Cellphone distraction identified.")
         
 
     def test_case_microsleep(self):
@@ -60,7 +60,7 @@ class TestDMSCameraLogic(unittest.TestCase):
         self.assertEqual(result["led_command"], "DANGER")
         self.assertTrue(result["alarm_triggered"])
         self.assertEqual(result["blink_counter"], 7)
-        print("   ✅ PASSED: Microsleep identified.")
+        print("PASSED: Microsleep identified.")
 
 
     def test_case_side_distraction(self):
@@ -68,7 +68,7 @@ class TestDMSCameraLogic(unittest.TestCase):
         print("   Context: Yaw=-30")
         result = self.cam_system.analyze_driver_state(pitch=0, yaw=-30, avg_ear=0.30)
         self.assertEqual(result["led_command"], "SX")
-        print("   ✅ PASSED: Side Distraction identified.")
+        print("PASSED: Side Distraction identified.")
 
 
     def test_ear_calculation(self):
@@ -83,7 +83,7 @@ class TestDMSCameraLogic(unittest.TestCase):
         
         ear = self.cam_system.calculate_ear(self.fake_landmarks, self.cam_system.LEFT_EYE, 100, 100)
         self.assertGreater(ear, 0.25)
-        print(f"   ✅ PASSED: Calculated EAR is {ear:.2f}")
+        print(f"PASSED: Calculated EAR is {ear:.2f}")
 
 if __name__ == '__main__':
     unittest.main()

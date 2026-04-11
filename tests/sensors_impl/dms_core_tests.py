@@ -17,7 +17,7 @@ import dms_core
 class TestDMSCoreIntegration(unittest.TestCase):
     
     def setUp(self):
-        print(f"\n🔵 {self._testMethodName}")
+        print(f"\n{self._testMethodName}")
         
 
     def _setup_light_mock(self, mock_light_cls):
@@ -61,7 +61,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
             print("   Verifica: Audio Crash -> LED Danger + Exit")
             mock_led_instance.signal_danger.assert_called_once()
             mock_exit.assert_called_once()
-            print("   ✅ PASSED")
+            print("PASSED")
             
             
     @patch('dms_core.DMSGyro')       
@@ -89,7 +89,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
 
         print("   Verifica: Alcol DANGER -> LED Danger")
         mock_led_instance.signal_danger.assert_called()
-        print("   ✅ PASSED")
+        print("PASSED")
         
     
     @patch('dms_core.DMSGyro')
@@ -119,7 +119,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
 
         print("   Verifica: Gas DANGER -> LED Alert")
         mock_led_instance.signal_alert.assert_called()
-        print("   ✅ PASSED")
+        print("PASSED")
 
 
     @patch('dms_core.DMSGyro')
@@ -151,7 +151,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
 
         print("   Verifica: Camera SAFE -> LED Safe")
         mock_led_instance.signal_safe.assert_called()
-        print("   ✅ PASSED")
+        print("PASSED")
         
 
     @patch('dms_core.DMSGyro')
@@ -180,7 +180,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
 
         print("   Verifica: Camera DOWN -> LED Distraction Down")
         mock_led_instance.signal_distraction_down.assert_called()
-        print("   ✅ PASSED")
+        print("PASSED")
         
 
     @patch('dms_core.DMSGyro')
@@ -211,7 +211,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
 
         print("   Verifica: Camera None -> LED Alert")
         mock_led_instance.signal_alert.assert_called()
-        print("   ✅ PASSED")
+        print("PASSED")
         
 
     @patch('dms_core.DMSGyro')
@@ -237,7 +237,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
 
         print("   Verifica: Camera Command ALERT -> LED Alert")
         mock_led_instance.signal_alert.assert_called()
-        print("   ✅ PASSED")
+        print("  PASSED")
         
         
     @patch('dms_core.DMSGyro')
@@ -271,7 +271,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
             # Verifica chiamata luce
             mock_light_instance.get_status.assert_called()
             
-            print("   ✅ PASSED")
+            print("PASSED")
     
     @patch('dms_core.DMSGyro')
     @patch('dms_core.DMSAir')
@@ -303,7 +303,7 @@ class TestDMSCoreIntegration(unittest.TestCase):
             print("   Verifica: Gyroscope Crash -> LED Danger + Exit")
             mock_led_instance.signal_danger.assert_called_once()
             mock_exit.assert_called_once()
-            print("   ✅ PASSED")
+            print("PASSED")
         
 
 if __name__ == '__main__':

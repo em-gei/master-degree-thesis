@@ -38,14 +38,16 @@ class DMSGyro:
                     "priority": 4,
                     "led_command": "DANGER",
                     "ui_text": "IMPATTO RILEVATO!",
-                    "g_force": g_force
+                    "g_force": g_force,
+                    "raw_acc": {"acc_x": acc_x, "acc_y": acc_y, "acc_z": acc_z}
                 }
             else:
                 return {
                     "priority": 0,
                     "led_command": "SAFE",
                     "ui_text": f"G-Force: {g_force:.1f}",
-                    "g_force": g_force
+                    "g_force": g_force,
+                    "raw_acc": {"acc_x": acc_x, "acc_y": acc_y, "acc_z": acc_z}
                 }
         except Exception:
             return None

@@ -1,5 +1,4 @@
-/__pycache__
+__pycache__/
 /venv
-/src/sensors_impl/__pycache__
-/tests/__pycache__
 .idea
+session_logs/

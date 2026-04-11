@@ -71,7 +71,7 @@ class TestDMSLed(unittest.TestCase):
             
             self.assertEqual(mock_send.call_count, 8)
             mock_send.assert_called_with(8, 0x18)
-            print("   ✅ PASSED: Alert signal (horizontal line) correct.")
+            print("PASSED: Alert signal (horizontal line) correct.")
 
 
 if __name__ == '__main__':

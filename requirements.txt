@@ -1,0 +1,21 @@
+# --- Core Math & Data Libraries ---
+# numpy>=2.0 is required to match the system picamera2 C extensions (simplejpeg)
+# which are compiled against numpy 2.x on Raspberry Pi.
+numpy>=2.0
+pandas
+joblib
+lightgbm
+
+# --- Computer Vision & Media ---
+opencv-contrib-python
+mediapipe
+
+# --- Hardware Abstraction (Adafruit & GPIO) ---
+adafruit-blinka
+adafruit-circuitpython-mpu6050
+adafruit-circuitpython-tsl2591
+adafruit-circuitpython-dht
+gpiozero
+
+# --- Audio Support ---
+pyaudio
