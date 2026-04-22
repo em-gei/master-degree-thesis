@@ -1,3 +1,5 @@
 __pycache__/
 /venv
 .idea
+algorithms_benchmark/venv_benchmark
+algorithms_benchmark/catboost_info
