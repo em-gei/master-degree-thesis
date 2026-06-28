@@ -11,6 +11,15 @@ if "--headless" in sys.argv:
     os.environ["DMS_HEADLESS"] = "1"
     sys.argv.remove("--headless")
 
+# --web flag: run without local windows and stream the views (camera landmarks,
+# weather monitor, alcohol alert) to a browser over the network. Useful over SSH
+# where OpenCV windows cannot be displayed. The platform is forced offscreen so
+# cv2.waitKey works without a real display, while frames are pushed to the stream.
+if "--web" in sys.argv:
+    os.environ["DMS_WEB"] = "1"
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    sys.argv.remove("--web")
+
 # --- SUPPRESS NOISY THIRD-PARTY WARNINGS ---
 # scikit-learn version mismatch warning (model trained with different version)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -40,11 +49,19 @@ from critical_unit import CriticalUnit
 from environment_unit import EnvironmentUnit
 from behavioral_unit import BehavioralUnit
 from priority_arbitrator import PriorityArbitrator
+import dms_web_stream
 
 def main():
     print("==================================================")
     print("   STARTING DRIVER MONITORING SYSTEM (DMS) V2.0   ")
     print("==================================================")
+
+    # 0. START WEB LIVE-VIEW SERVER (if --web)
+    if os.environ.get("DMS_WEB") == "1":
+        url = dms_web_stream.start_server(port=8000)
+        print("\n" + "=" * 50)
+        print(f"  LIVE VIEW READY -> open {url} on your Mac")
+        print("=" * 50 + "\n")
 
     # 1. INITIALIZE SHARED HARDWARE
     # The Gyroscope is instantiated here and shared between Critical and Behavioral units

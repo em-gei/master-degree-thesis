@@ -5,6 +5,7 @@ import board
 import adafruit_dht
 import cv2
 import numpy as np
+import dms_web_stream as web
 
 # Threshold configuration
 TEMP_LOW = 18.0
@@ -22,8 +23,8 @@ class DMSTemp:
             # Use DHT11 su GPIO4
             self.dht_device = adafruit_dht.DHT11(board.D4)
             print("Ambient Monitor Started (DHT11 on GPIO4)")
-            # Create window view (only in desktop mode)
-            if not self.headless:
+            # Create window view (only in desktop mode; web mode streams instead)
+            if not self.headless and not web.WEB_MODE:
                 cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
                 cv2.resizeWindow(WINDOW_NAME, 400, 300)
 
@@ -34,7 +35,7 @@ class DMSTemp:
 
     def _update_ui(self, temp, hum):
         """Aggiorna la finestra con i nuovi dati e colori"""
-        if self.headless:
+        if self.headless and not web.WEB_MODE:
             return
         bg_color = (0, 0, 0) # black
         text_color = (255, 255, 255) # white
@@ -55,7 +56,10 @@ class DMSTemp:
         # 3. Humidity
         hum_text = f"Umidita': {hum}%" if hum is not None else "Umidita': --%"
         cv2.putText(img, hum_text, (100, 220),  cv2.FONT_HERSHEY_SIMPLEX, 0.7, text_color, 2)
-        cv2.imshow(WINDOW_NAME, img)
+        if web.WEB_MODE:
+            web.update_frame(WINDOW_NAME, img)
+        else:
+            cv2.imshow(WINDOW_NAME, img)
         
 
     def _read_dht(self, result):

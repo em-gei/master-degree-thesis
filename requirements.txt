@@ -19,3 +19,6 @@ gpiozero
 
 # --- Audio Support ---
 pyaudio
+
+# --- Web Live-View / Remote Logger ---
+flask

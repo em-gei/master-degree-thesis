@@ -3,6 +3,7 @@ import time
 import cv2
 import numpy as np
 import mediapipe as mp
+import dms_web_stream as web
 
 try:
     from picamera2 import Picamera2
@@ -226,8 +227,8 @@ class DMSCamera:
                 avg_ear = (left_ear + right_ear) / 2.0
                 pitch, yaw, _ = self.get_head_pose(lm, w, h, cam_matrix, dist_matrix)
 
-                # Draw landmarks (only in desktop mode)
-                if not self.headless:
+                # Draw landmarks (desktop window or web stream)
+                if not self.headless or web.WEB_MODE:
                     anonymous_view = np.zeros((h, w, 3), dtype=np.uint8)
                     for idx in self.LEFT_EYE + self.RIGHT_EYE + self.FACE_3D_INDEXES:
                         pt = (int(lm[idx].x * w), int(lm[idx].y * h))
@@ -235,7 +236,10 @@ class DMSCamera:
                     debug_info = f"EAR: {avg_ear:.2f} | P: {int(pitch)} | Y: {int(yaw)}"
                     cv2.putText(anonymous_view, debug_info, (10, h - 20),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
-                    cv2.imshow('DMS', anonymous_view)
+                    if web.WEB_MODE:
+                        web.update_frame('DMS', anonymous_view)
+                    else:
+                        cv2.imshow('DMS', anonymous_view)
 
                 return {
                     "face_detected": True,
@@ -244,11 +248,14 @@ class DMSCamera:
                     "ear": round(avg_ear, 3)   # Eye Aspect Ratio
                 }
         else:
-            if not self.headless:
+            if not self.headless or web.WEB_MODE:
                 anonymous_view = np.zeros((h, w, 3), dtype=np.uint8)
                 cv2.putText(anonymous_view, "NESSUN VOLTO RILEVATO", (10, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-                cv2.imshow('DMS', anonymous_view)
+                if web.WEB_MODE:
+                    web.update_frame('DMS', anonymous_view)
+                else:
+                    cv2.imshow('DMS', anonymous_view)
             return {
                 "face_detected": False,
                 "pitch": 0.0,

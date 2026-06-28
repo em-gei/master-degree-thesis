@@ -3,6 +3,7 @@ import board
 import digitalio
 import cv2
 import numpy as np
+import dms_web_stream as web
 
 
 PIN_SENSOR = board.D23
@@ -30,17 +31,23 @@ class DMSAlcohol:
         img[:] = (0, 0, 255) # RED
         cv2.putText(img, "PERICOLO!", (80, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 4)
         cv2.putText(img, "ALCOL RILEVATO", (30, 180), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 3)
-        cv2.imshow(WINDOW_NAME, img)
+        if web.WEB_MODE:
+            web.update_frame(WINDOW_NAME, img)
+        else:
+            cv2.imshow(WINDOW_NAME, img)
         self.alert_window_open = True
-        
+
 
     def _close_alert_window(self):
         """Chiude la finestra se aperta"""
         if self.alert_window_open:
-            try:
-                cv2.destroyWindow(WINDOW_NAME)
-            except:
-                pass
+            if web.WEB_MODE:
+                web.clear_frame(WINDOW_NAME)
+            else:
+                try:
+                    cv2.destroyWindow(WINDOW_NAME)
+                except:
+                    pass
             self.alert_window_open = False
             
 
